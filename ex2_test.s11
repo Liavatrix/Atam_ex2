@@ -8,16 +8,16 @@ assign:	mov dict, r1
 
 check_if_match:		  br check_exactly
 second_check:		  inc r1
-second_check_loop:	  cmpb (r2), ending
+scnd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
-					  cmpb (r1), ending
+					  cmpb (r1), #'@
 					  beq end_word
 					  cmpb (r1), (r2)
 					  bne reset_loop_1
 					  inc r1
 					  inc r2
 					  inc r4
-					  br second_check_loop
+					  br scnd_check_loop
 reset_loop_1:	dec r1
 				dec r2
 				dec r4
@@ -25,40 +25,40 @@ reset_loop_1:	dec r1
 				bne reset_loop_1
 third_check:	      dec r1
 					  inc r2
-third_check_loop:	  cmpb (r2), ending
+thrd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
-					  cmpb (r1), ending
+					  cmpb (r1), #'@
 					  beq end_word
 					  cmpb (r1), (r2)
-					  bne reset_loop_2
+					  bne rst_loop_2
 					  inc r1
 					  inc r2
 					  inc r4
-					  br third_check_loop
-reset_loop_2:	dec r1
+					  br thrd_check_loop
+rst_loop_2:	dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
-				bne reset_loop_2	
+				bne rst_loop_2	
 fourth_check:		  inc r1
-fourth_check_loop:	  cmpb (r2), ending
+frth_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
-					  cmpb (r1), ending
+					  cmpb (r1), #'@
 					  beq end_word
 					  cmpb (r1), (r2)
-					  bne reset_loop_3
+					  bne loop_3
 					  inc r1
 					  inc r2
 					  inc r4
-					  br fourth_check_loop
-reset_loop_3:	dec r1
+					  br frth_check_loop
+loop_3:	dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
-				bne reset_loop_3				
+				bne loop_3				
 
 		beq end_preffix
-		cmpb (r2), ending
+		cmpb (r2), #'@
 		beq end_preffix
 		cmpb (r1), (r2)
 		bne main
@@ -66,9 +66,9 @@ reset_loop_3:	dec r1
 		inc r2
 		br check_if_match
 
-check_exactly: cmpb (r2), ending
+check_exactly: cmpb (r2), #'@
 			   beq success_check_exactly
-			   cmpb (r1), ending
+			   cmpb (r1), #'@
 			   br end_word
 			   cmpb (r1), (r2)
 			   bne second_check
@@ -76,7 +76,7 @@ check_exactly: cmpb (r2), ending
 			   inc r2
 			   br check_exactly
 			   
-success_check_exactly
+success_check_exactly: br main
 ;----------------------------
 string_len: .word 2
 strings: .word str1
@@ -96,6 +96,3 @@ term3: .ascii <atmosphere@>
 term4: .ascii <matam@>
 term5: .ascii <combi@>
 ;----------------------------
-
-count: .word 0
-ending: .ascii<@>
