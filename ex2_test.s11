@@ -1,0 +1,60 @@
+
+
+
+main:	br assign
+
+check_if_equal: 
+inc count
+cmpb (r1), ending
+		beq end_preffix
+		cmpb (r2), ending
+		beq end_preffix
+		cmpb (r1), (r2)
+		bne main
+		inc r1
+		inc r2
+		br check_if_equal
+		
+assign:	mov dict, r1
+		mov strings, r2
+		br check_if_equal
+
+end_word: inc count
+loop_ew:  cmpb (r2), ending
+		  beq inc_n_check
+		  inc r2
+		  br loop_ew
+		  
+end_preffix: inc count
+loop_ep:  cmpb (r1), ending
+		  beq inc_n_check
+		  inc r1
+		  br loop_ep
+		  
+inc_n_check: inc r1
+			 inc r2
+			 br check_if_equal
+
+not_equal: halt
+;----------------------------
+string_len: .word 2
+strings: .word str1
+		 .word str2
+str1: .ascii<atam@>
+str2: .ascii<combi@>
+.even
+dict_len: .word 5
+dict: .word term1
+	  .word term2
+	  .word term3
+	  .word term4
+	  .word term5
+term1: .ascii <atam@>
+term2: .ascii <azam@>
+term3: .ascii <atmosphere@>
+term4: .ascii <matam@>
+term5: .ascii <combi@>
+;----------------------------
+
+count: .word 0
+ending: .ascii<@>
