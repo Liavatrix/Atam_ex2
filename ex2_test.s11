@@ -2,10 +2,61 @@
 
 
 main:	br assign
+assign:	mov dict, r1
+		mov strings, r2
+		br check_if_match
 
-check_if_equal: 
-inc count
-cmpb (r1), ending
+check_if_match:		  br check_exactly
+second_check:		  inc r1
+second_check_loop:	  cmpb (r2), ending
+					  beq success_check_exactly
+					  cmpb (r1), ending
+					  beq end_word
+					  cmpb (r1), (r2)
+					  bne reset_loop_1
+					  inc r1
+					  inc r2
+					  inc r4
+					  br second_check_loop
+reset_loop_1:	dec r1
+				dec r2
+				dec r4
+				cmp r4, #0
+				bne reset_loop_1
+third_check:	      dec r1
+					  inc r2
+third_check_loop:	  cmpb (r2), ending
+					  beq success_check_exactly
+					  cmpb (r1), ending
+					  beq end_word
+					  cmpb (r1), (r2)
+					  bne reset_loop_2
+					  inc r1
+					  inc r2
+					  inc r4
+					  br third_check_loop
+reset_loop_2:	dec r1
+				dec r2
+				dec r4
+				cmp r4, #0
+				bne reset_loop_2	
+fourth_check:		  inc r1
+fourth_check_loop:	  cmpb (r2), ending
+					  beq success_check_exactly
+					  cmpb (r1), ending
+					  beq end_word
+					  cmpb (r1), (r2)
+					  bne reset_loop_3
+					  inc r1
+					  inc r2
+					  inc r4
+					  br fourth_check_loop
+reset_loop_3:	dec r1
+				dec r2
+				dec r4
+				cmp r4, #0
+				bne reset_loop_3				
+
 		beq end_preffix
 		cmpb (r2), ending
 		beq end_preffix
@@ -13,29 +64,19 @@ cmpb (r1), ending
 		bne main
 		inc r1
 		inc r2
-		br check_if_equal
-		
-assign:	mov dict, r1
-		mov strings, r2
-		br check_if_equal
+		br check_if_match
 
-end_word: inc count
-loop_ew:  cmpb (r2), ending
-		  beq inc_n_check
-		  inc r2
-		  br loop_ew
-		  
-end_preffix: inc count
-loop_ep:  cmpb (r1), ending
-		  beq inc_n_check
-		  inc r1
-		  br loop_ep
-		  
-inc_n_check: inc r1
-			 inc r2
-			 br check_if_equal
-
-not_equal: halt
+check_exactly: cmpb (r2), ending
+			   beq success_check_exactly
+			   cmpb (r1), ending
+			   br end_word
+			   cmpb (r1), (r2)
+			   bne second_check
+			   inc r1
+			   inc r2
+			   br check_exactly
+			   
+success_check_exactly
 ;----------------------------
 string_len: .word 2
 strings: .word str1
