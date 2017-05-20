@@ -105,7 +105,16 @@ lp_rst_prefix:  cmp r3, #1
 				br check_if_match
 first_prefix:	mov strings, r2
 				br check_if_match
+
+store_string: mov strings, max_string
+			  br after_max
+
 replace_max: mov r0, max_score
+			 cmp r3, #1
+			 beq store_string
+r_max_loop:	 dec r2
+			 cmpb -1(r2), #'@
+			 bne r_max_loop
 			 mov r2, max_string
 		     br after_max
 
