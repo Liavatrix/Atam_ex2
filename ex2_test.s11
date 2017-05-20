@@ -22,7 +22,10 @@ scnd_check_loop:	  cmpb (r2), #'@
 					  inc r2
 					  inc r4
 					  br scnd_check_loop
-reset_loop_1:	dec r1
+		
+reset_loop_1:	cmp r4, #0
+				beq third_check
+				dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
@@ -39,7 +42,9 @@ thrd_check_loop:	  cmpb (r2), #'@
 					  inc r2
 					  inc r4
 					  br thrd_check_loop
-rst_loop_2:	dec r1
+rst_loop_2:		cmp r4, #0
+				beq fourth_check
+				dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
@@ -50,16 +55,11 @@ frth_check_loop:	  cmpb (r2), #'@
 					  cmpb (r1), #'@
 					  beq end_word
 					  cmpb (r1), (r2)
-					  bne loop_3
+					  bne failed_check
 					  inc r1
 					  inc r2
 					  inc r4
-					  br frth_check_loop
-loop_3:	dec r1
-				dec r2
-				dec r4
-				cmp r4, #0
-				bne loop_3				
+					  br frth_check_loop				
 
 		beq end_prefix
 		cmpb (r2), #'@
@@ -74,7 +74,7 @@ loop_3:	dec r1
 check_exactly: cmpb (r2), #'@
 			   beq success_check_exactly
 			   cmpb (r1), #'@
-			   br end_word
+			   beq end_word
 			   cmpb (r1), (r2)
 			   bne second_check
 			   inc r1
@@ -83,7 +83,8 @@ check_exactly: cmpb (r2), #'@
 			   
 ;handle the end of the comparison
 success_check_exactly: inc r0
-failed_check:		   cmp r5, #dict_len
+failed_check:		   mov #0, r4
+					   cmp r5, #dict_len
 					   bne next_dict_word
 					   cmp r0, @max_score
 					   bhi replace_max
@@ -93,14 +94,17 @@ after_max:			   cmp r3, #string_len
 					   
 ;move r1 to point next dict word
 next_dict_word: inc r1
-				cmpb (r1 - 1), #'@
+				cmpb -1(r1), #'@
 				bne next_dict_word
 				inc r5
-lp_rst_prefix:  dec r2
-				cmpb (r2 - 1), #'@  ; a bug will occuer if prefix is just @, shold be handled seperatly
+lp_rst_prefix:  cmp r3, #1
+				beq first_prefix
+				dec r2
+				cmpb -1(r2), #'@  ; a bug will occuer if prefix is just @, shold be handled seperatly
 				bne lp_rst_prefix
 				br check_if_match
-
+first_prefix:	mov strings, r2
+				br check_if_match
 replace_max: mov r0, max_score
 			 mov r2, max_string
 		     br after_max
@@ -108,13 +112,17 @@ replace_max: mov r0, max_score
 next_prefix: cmp r3, #string_len
 			 beq fin
 nxt_prf_loop: inc r2
-			  cmpb (r2 - 1), #'@
+			  cmpb -1(r2), #'@
 			  bne nxt_prf_loop
 			  inc r3
 			  mov 0, r5
 			  mov dict, r1
 			  br check_if_match
 			  
+end_word: inc r2
+		  cmpb (r2), #'@
+		  beq success_check_exactly
+		  br failed_check
 fin: halt
 ;----------------------------
 string_len: .word 2
