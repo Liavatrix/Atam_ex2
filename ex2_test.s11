@@ -1,7 +1,4 @@
-
-
-
-main:	mov #0, #max_score
+main:	movb #0, #max_score
 		br assign
 assign: inc r5
 		inc r3
@@ -126,24 +123,3 @@ end_word: inc r2
 		  beq success_check_exactly
 		  br failed_check
 fin: halt
-;----------------------------
-string_len: .word 2
-strings: .word str1
-		 .word str2
-str1: .ascii<atam@>
-str2: .ascii<combi@>
-.even
-dict_len: .word 5
-dict: .word term1
-	  .word term2
-	  .word term3
-	  .word term4
-	  .word term5
-term1: .ascii <atam@>
-term2: .ascii <azam@>
-term3: .ascii <atmosphere@>
-term4: .ascii <matam@>
-term5: .ascii <combi@>
-;----------------------------
-max_score: .word 0
-max_string: .word 0
