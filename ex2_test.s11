@@ -12,14 +12,17 @@ second_check:		  inc r1
 scnd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq br_end_word
+					  beq eend_word
 					  cmpb (r1), (r2)
 					  bne reset_loop_1
 					  inc r1
 					  inc r2
 					  inc r4
 					  br scnd_check_loop
-		
+eend_word: inc r2
+		  cmpb (r2), #'@
+		  beq success_check_exactly
+		  dec r2
 reset_loop_1:	cmp r4, #0
 				beq third_check
 				dec r1
@@ -32,13 +35,17 @@ third_check:	      dec r1
 thrd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq br_end_word
+					  beq nd_word
 					  cmpb (r1), (r2)
 					  bne rst_loop_2
 					  inc r1
 					  inc r2
 					  inc r4
 					  br thrd_check_loop
+nd_word: inc r2
+		  cmpb (r2), #'@
+		  beq success_check_exactly
+		  dec r2
 rst_loop_2:		cmp r4, #0
 				beq fourth_check
 				dec r1
@@ -50,15 +57,18 @@ fourth_check:		  inc r1
 frth_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq br_end_word
+					  beq end_word
 					  cmpb (r1), (r2)
 					  bne failed_check
 					  inc r1
 					  inc r2
 					  inc r4
 					  br frth_check_loop				
-br_end_word: br end_word
-
+end_word: inc r2
+		  cmpb (r2), #'@
+		  beq success_check_exactly
+		  dec r2
+		  br failed_check
 ;compare the word and the prefix and leave them where they don't match
 check_exactly: cmpb (r2), #'@
 			   beq success_check_exactly
@@ -77,7 +87,7 @@ failed_check:		   mov #0, r4
 					   bne next_dict_word
 					   cmpb r0, max_score
 					   bhi replace_max
-after_max:			   cmp r3, string_len
+after_max:			   cmp r3, strings_len
 					   blo next_prefix
 					   halt
 					   
@@ -86,6 +96,8 @@ next_dict_word: inc r1
 				cmpb -1(r1), #'@
 				bne next_dict_word
 				inc r5
+				cmpb -1(r2), #'@
+				beq br_check_if_match
 lp_rst_prefix:  cmp r3, #1
 				beq first_prefix
 				dec r2
@@ -101,13 +113,15 @@ store_string: mov strings, max_string
 replace_max: movb r0, max_score
 			 cmp r3, #1
 			 beq store_string
+			 cmpb -1(r2), #'@
+			 beq store
 r_max_loop:	 dec r2
 			 cmpb -1(r2), #'@
 			 bne r_max_loop
-			 movb r2, max_string
+store:		 movb r2, max_string
 		     br after_max
 
-next_prefix: cmp r3, string_len
+next_prefix: cmp r3, strings_len
 			 beq fin
 nxt_prf_loop: inc r2
 			  cmpb -1(r2), #'@
@@ -118,8 +132,4 @@ nxt_prf_loop: inc r2
 			  mov #0, r0
 			  br br_check_if_match
 			  
-end_word: inc r2
-		  cmpb (r2), #'@
-		  beq success_check_exactly
-		  br failed_check
 fin: halt
