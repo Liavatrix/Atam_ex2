@@ -15,7 +15,7 @@ second_check:		  inc r1
 scnd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq end_word
+					  beq br_end_word
 					  cmpb (r1), (r2)
 					  bne reset_loop_1
 					  inc r1
@@ -35,7 +35,7 @@ third_check:	      dec r1
 thrd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq end_word
+					  beq br_end_word
 					  cmpb (r1), (r2)
 					  bne rst_loop_2
 					  inc r1
@@ -53,22 +53,14 @@ fourth_check:		  inc r1
 frth_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq end_word
+					  beq br_end_word
 					  cmpb (r1), (r2)
 					  bne failed_check
 					  inc r1
 					  inc r2
 					  inc r4
 					  br frth_check_loop				
-
-		beq end_prefix
-		cmpb (r2), #'@
-		beq end_prefix
-		cmpb (r1), (r2)
-		bne main
-		inc r1
-		inc r2
-		br check_if_match
+br_end_word: br end_word
 
 ;compare the word and the prefix and leave them where they don't match
 check_exactly: cmpb (r2), #'@
@@ -84,11 +76,11 @@ check_exactly: cmpb (r2), #'@
 ;handle the end of the comparison
 success_check_exactly: inc r0
 failed_check:		   mov #0, r4
-					   cmp r5, #dict_len
+					   cmp r5, dict_len
 					   bne next_dict_word
-					   cmp r0, @max_score
+					   cmpb r0, max_score
 					   bhi replace_max
-after_max:			   cmp r3, #string_len
+after_max:			   cmp r3, string_len
 					   blo next_prefix
 					   halt
 					   
@@ -104,29 +96,30 @@ lp_rst_prefix:  cmp r3, #1
 				bne lp_rst_prefix
 				br check_if_match
 first_prefix:	mov strings, r2
-				br check_if_match
+br_check_if_match:br check_if_match
 
 store_string: mov strings, max_string
 			  br after_max
 
-replace_max: mov r0, max_score
+replace_max: movb r0, max_score
 			 cmp r3, #1
 			 beq store_string
 r_max_loop:	 dec r2
 			 cmpb -1(r2), #'@
 			 bne r_max_loop
-			 mov r2, max_string
+			 movb r2, max_string
 		     br after_max
 
-next_prefix: cmp r3, #string_len
+next_prefix: cmp r3, string_len
 			 beq fin
 nxt_prf_loop: inc r2
 			  cmpb -1(r2), #'@
 			  bne nxt_prf_loop
 			  inc r3
-			  mov 0, r5
+			  mov #1, r5
 			  mov dict, r1
-			  br check_if_match
+			  mov #0, r0
+			  br br_check_if_match
 			  
 end_word: inc r2
 		  cmpb (r2), #'@
@@ -152,5 +145,5 @@ term3: .ascii <atmosphere@>
 term4: .ascii <matam@>
 term5: .ascii <combi@>
 ;----------------------------
-max_score: .blkw 1
-max_string: .blkw 1
+max_score: .word 0
+max_string: .word 0
