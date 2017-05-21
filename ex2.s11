@@ -15,7 +15,7 @@ second_check:		  inc r1  ; 			drop off a mismatched letter from the word
 scnd_check_loop:	  cmpb (r2), #'@ ; 		checks if the prefix is a match
 					  beq success_check_exactly ;	in case of match
 					  cmpb (r1), #'@ ; 		checks if the word ended before the prefix
-					  beq reset_loop_1		;handle case of "ended" word
+					  beq reset_loop_1		; handle case of "ended" word which mean the prefix isn't a match
 					  cmpb (r1), (r2)		; checks if word and string are matching in some letter
 					  bne reset_loop_1		; return the pointers to the last place they were matching
 					  inc r1				; move word pointer forward
@@ -23,16 +23,16 @@ scnd_check_loop:	  cmpb (r2), #'@ ; 		checks if the prefix is a match
 					  inc r4				; keep tracks of the number we moved them
 					  br scnd_check_loop	; checks next couple of words
 
-reset_loop_1:	cmp r4, #0
-				beq third_check
+reset_loop_1:	cmp r4, #0				; reset the word pointers to where they were-
+				beq third_check			; -after check_exactly...
 				dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
 				bne reset_loop_1
-third_check:	      dec r1
-					  inc r2
-thrd_check_loop:	  cmpb (r2), #'@
+third_check:	      dec r1			; ... end of reset
+					  inc r2            ; now we check the case in which a mismatched letter is dropped from the string
+thrd_check_loop:	  cmpb (r2), #'@	; same function as before
 					  beq success_check_exactly
 					  cmpb (r1), #'@
 					  beq rst_loop_2
@@ -43,82 +43,83 @@ thrd_check_loop:	  cmpb (r2), #'@
 					  inc r4
 					  br thrd_check_loop
 
-rst_loop_2:		cmp r4, #0
+rst_loop_2:		cmp r4, #0			; reset the words pointers to where they were after check_exactly
 				beq fourth_check
 				dec r1
 				dec r2
 				dec r4
 				cmp r4, #0
-				bne rst_loop_2	
-fourth_check:		  inc r1
-frth_check_loop:	  cmpb (r2), #'@
+				bne rst_loop_2		; end of reset pointers
+fourth_check:		  inc r1		; now we check the case in which we "switch" a letter in the string, so we basicly continue the check *after* the switch
+frth_check_loop:	  cmpb (r2), #'@		; same function as the last two
 					  beq success_check_exactly
 					  cmpb (r1), #'@
 					  beq failed_check
 					  cmpb (r1), (r2)
-					  bne failed_check
+					  bne failed_check		;now there is no reset loop, because we covered up all the cases in which the words can match
 					  inc r1
 					  inc r2
 					  inc r4
 					  br frth_check_loop				
 
-;compare the word and the prefix and leave them where they don't match
+;compare the word and the prefix and leave them where they don't match:
 check_exactly: cmpb (r2), #'@
 			   beq success_check_exactly
 			   cmpb (r1), #'@
-			   beq end_word
+			   beq end_word		; means the word is shorter than the prefix
 			   cmpb (r1), (r2)
 			   bne second_check
 			   inc r1
 			   inc r2
 			   br check_exactly
-end_word: 	cmpb +1(r2), #'@ ;handle the end of the comparison
-			beq success_check_exactly
-			br failed_check
+end_word: 	cmpb +1(r2), #'@ ;	if we can drop a letter off the prefix and he will reach the end it means he is a possible match
+			beq success_check_exactly	;
+			br failed_check		; reach this line of the prefix is too long to match the word
 
-success_check_exactly: inc r0
-failed_check:		   mov #0, r4
-					   cmp r5, dict_len
-					   bne next_dict_word
-					   cmpb r0, max_score
-					   bhi replace_max
-after_max:			   cmp r3, strings_len
+success_check_exactly: inc r0		; in case of success, we raise the counter of matched words by 1
+failed_check:		   mov #0, r4		; reset the letter counter
+					   cmp r5, dict_len		; checks if there are any more words to check for a certain prefix
+					   bne next_dict_word		
+					   cmpb r0, max_score	; checks if the counter of matched words is greater than the max
+					   bhi replace_max		; replace the max if that's the situation
+after_max:			   cmp r3, strings_len	; checks if there are any more prefixes to check
 					   blo next_prefix
-					   halt
+					   halt					; if we got here it means there are no more prefixes to check, therefore, halt.
 					   
-;move r1 to point next dict word
+;move r1 to point next dict word, and move the r2(string pointer) to the beginning of the prefix
 next_dict_word: inc r1
 				cmpb -1(r1), #'@
 				bne next_dict_word
 				inc r5
 				cmpb -1(r2), #'@
 				beq br_check_if_match
-lp_rst_prefix:  cmp r3, #1
+lp_rst_prefix:  cmp r3, #1			; if this is the first prefix we check we can just move strings into r2
 				beq first_prefix
-				dec r2
-				cmpb -1(r2), #'@  ; 
+				dec r2				; a basic loop to check if we reached the first letter of the prefix
+				cmpb -1(r2), #'@   
 				bne lp_rst_prefix
-				br check_if_match
-first_prefix:	mov strings, r2
+				br check_if_match	; now we check again for this new word we got
+first_prefix:	mov strings, r2		; the case in which we are at the first prefix
 br_check_if_match:br check_if_match
 
 store_string: mov strings, max_string
 			  br after_max
 
+; replacing the max by r0 which is the new max
 replace_max: movb r0, max_score
 			 cmp r3, #1
 			 beq store_string
 			 cmpb -1(r2), #'@
 			 beq store
-r_max_loop:	 dec r2
+r_max_loop:	 dec r2			; getting the first letter of the max_string
 			 cmpb -1(r2), #'@
 			 bne r_max_loop
-store:		 mov r2, max_string
+store:		 mov r2, max_string		; appointing the max_string
 		     br after_max
 
-next_prefix: cmp r3, strings_len
+next_prefix: cmp r3, strings_len	; getting to the next prefix, if that is the last prefix, halt
 			 beq fin
-nxt_prf_loop: inc r2
+nxt_prf_loop: inc r2						
 			  cmpb -1(r2), #'@
 			  bne nxt_prf_loop
 			  inc r3
