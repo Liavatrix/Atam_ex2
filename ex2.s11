@@ -1,3 +1,4 @@
+.=torg + 1000
 main:	movb #0, #max_score
 		br assign
 assign: inc r5  ;			r5 - num of current word we are checking
@@ -5,6 +6,7 @@ assign: inc r5  ;			r5 - num of current word we are checking
 		mov #0, r0 ;		r0 - num of match words for the current prefix
 		mov dict, r1; 		the dict pointer
 		mov strings, r2;	the strings pointer
+		mov r2, max_string;in case every case equal 0
 		br check_if_match
 
 ;this function is the skeleton of the program
@@ -13,17 +15,14 @@ second_check:		  inc r1  ; 			drop off a mismatched letter from the word
 scnd_check_loop:	  cmpb (r2), #'@ ; 		checks if the prefix is a match
 					  beq success_check_exactly ;	in case of match
 					  cmpb (r1), #'@ ; 		checks if the word ended before the prefix
-					  beq eend_word			;handle case of "ended" word
+					  beq reset_loop_1		;handle case of "ended" word
 					  cmpb (r1), (r2)		; checks if word and string are matching in some letter
 					  bne reset_loop_1		; return the pointers to the last place they were matching
 					  inc r1				; move word pointer forward
 					  inc r2				; move string pointer forward
 					  inc r4				; keep tracks of the number we moved them
 					  br scnd_check_loop	; checks next couple of words
-eend_word: inc r2		; checks if the prefix is also about to end
-		  cmpb (r2), #'@
-		  beq success_check_exactly
-		  dec r2
+
 reset_loop_1:	cmp r4, #0
 				beq third_check
 				dec r1
@@ -36,17 +35,14 @@ third_check:	      dec r1
 thrd_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq nd_word
+					  beq rst_loop_2
 					  cmpb (r1), (r2)
 					  bne rst_loop_2
 					  inc r1
 					  inc r2
 					  inc r4
 					  br thrd_check_loop
-nd_word: inc r2
-		  cmpb (r2), #'@
-		  beq success_check_exactly
-		  dec r2
+
 rst_loop_2:		cmp r4, #0
 				beq fourth_check
 				dec r1
@@ -58,18 +54,14 @@ fourth_check:		  inc r1
 frth_check_loop:	  cmpb (r2), #'@
 					  beq success_check_exactly
 					  cmpb (r1), #'@
-					  beq end_word
+					  beq failed_check
 					  cmpb (r1), (r2)
 					  bne failed_check
 					  inc r1
 					  inc r2
 					  inc r4
 					  br frth_check_loop				
-end_word: inc r2
-		  cmpb (r2), #'@
-		  beq success_check_exactly
-		  dec r2
-		  br failed_check
+
 ;compare the word and the prefix and leave them where they don't match
 check_exactly: cmpb (r2), #'@
 			   beq success_check_exactly
@@ -80,8 +72,10 @@ check_exactly: cmpb (r2), #'@
 			   inc r1
 			   inc r2
 			   br check_exactly
-			   
-;handle the end of the comparison
+end_word: 	cmpb +1(r2), #'@ ;handle the end of the comparison
+			beq success_check_exactly
+			br failed_check
+
 success_check_exactly: inc r0
 failed_check:		   mov #0, r4
 					   cmp r5, dict_len
@@ -102,7 +96,7 @@ next_dict_word: inc r1
 lp_rst_prefix:  cmp r3, #1
 				beq first_prefix
 				dec r2
-				cmpb -1(r2), #'@  ; a bug will occuer if prefix is just @, shold be handled seperatly
+				cmpb -1(r2), #'@  ; 
 				bne lp_rst_prefix
 				br check_if_match
 first_prefix:	mov strings, r2
@@ -119,7 +113,7 @@ replace_max: movb r0, max_score
 r_max_loop:	 dec r2
 			 cmpb -1(r2), #'@
 			 bne r_max_loop
-store:		 movb r2, max_string
+store:		 mov r2, max_string
 		     br after_max
 
 next_prefix: cmp r3, strings_len
